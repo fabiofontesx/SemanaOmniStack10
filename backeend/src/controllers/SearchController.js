@@ -1,12 +1,12 @@
 const Dev = require('../models/Devs');
+const convertStringToArray = require('../utils/ConvertStringToArray');
 
 module.exports = {
     async index(req, res){
          // Buscar todos devs num raio de 10 KM
         //Filtar por tecnologia
         const {techs, latitude, longitude} = req.query;
-        const techsArray = techs.split(',').map(tech=>tech.trim());
-        console.log(latitude, longitude)
+        const techsArray = convertStringToArray(techs);
         const devs  = await Dev.find({
             techs: {
                 $in: techsArray

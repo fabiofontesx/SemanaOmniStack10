@@ -30,9 +30,11 @@ routes.post('/body', (req, res)=>{
 });
 
 
-
+routes.get('/', (req, res)=>{
+    return res.json({ok: true});
+    
+})
 //Rotas reais da aplicação
-
 routes.post('/devs', DevController.store);
 routes.get('/devs', DevController.index);
 routes.put('/devs/', DevController.update);

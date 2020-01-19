@@ -1,5 +1,7 @@
 const Dev = require('../models/Devs');
 const axios = require('axios');
+const convertStringToArray = require('../utils/ConvertStringToArray');
+const {sendMessage, findConnections } = require('../websocket');
 
 module.exports = {
 
@@ -12,6 +14,7 @@ module.exports = {
         const { github_username , techs, latitude, longitude } = req.body;
         const response_github = await axios.get(`https://api.github.com/users/${github_username}`);
         
+        const techsArray = convertStringToArray(techs);
         let dev = await Dev.findOne({github_username});
         if(!dev){
 
@@ -31,10 +34,20 @@ module.exports = {
                 name,
                 avatar_url,
                 bio,
-                techs,
+                techs: techsArray,
                 location
              })
-         
+             
+            //Filtrar as conexões que estão há no maximo 10km de distancia
+            //E que o novo dev tenha pelo menos uma das tecnologias filtradas
+            
+            const sendSocketMessageTo = findConnections(
+                {latitude, longitude},
+                techsArray
+            );
+            
+            sendMessage(sendSocketMessageTo, 'new-dev', dev);
+
             return res.json(dev)
         }
 
@@ -42,28 +55,39 @@ module.exports = {
     },
 
     async update(req, res){
-        const { github_username, avatar_url, techs, latitude, longitude } = req.body;
+        const { github_username, techs, latitude, longitude } = req.body;
+        const techsArray = convertStringToArray(techs);
         const dev = await Dev.findOneAndUpdate(
             {github_username},
-            { avatar_url, techs, latitude, longitude }, 
+            { techs:techsArray, latitude, longitude }, 
             {new: true}
         )
         if(!dev){
             return res.status(404).json({error: 'Dev not found'});
         }
         dev.update()
+        const sendSocketMessageTo = findConnections(
+            {latitude, longitude}
+        );
+
+        console.log(sendSocketMessageTo.length);
+
+        sendMessage(sendSocketMessageTo, 'dev-updated', dev);
         return res.json({dev});
     },
 
     async destroy(req, res){
         const {github_username} = req.params;
-        const devId = await Dev.findOneAndDelete({github_username}, {
-            projection: {_id: true}
+        const {devId, coordinates} = await Dev.findOneAndDelete({github_username}, {
+            projection: {_id: true, coordinates:true}
         })
         
         if(!devId){
             return res.status(404).json({error: 'Dev not found'});
         }
+
+        const connections = findConnections(coordinates);
+        sendMessage(connections, 'remove-dev', devId);
 
         return res.json({ok: true})
     }
