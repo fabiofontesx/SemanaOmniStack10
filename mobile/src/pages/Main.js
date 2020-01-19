@@ -48,7 +48,7 @@ function Main({navigation}){
             devs.filter(devRemove => devRemove._id != dev._id)
         ));
         
-    }, [devs]);
+    }, []);
 
     function setupWebSocket(){
         const {latitude, longitude} = currentRegion;
