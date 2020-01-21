@@ -1,7 +1,7 @@
 const Dev = require('../models/Devs');
 const axios = require('axios');
 const convertStringToArray = require('../utils/ConvertStringToArray');
-const {sendMessage, findConnections } = require('../websocket');
+const {sendMessage, findConnections, findConnectionsInTenKM } = require('../websocket');
 
 module.exports = {
 
@@ -46,6 +46,8 @@ module.exports = {
                 techsArray
             );
             
+            console.log(dev);
+            console.log(`Enviando novo dev para ${sendSocketMessageTo.length} sockets abertos`);
             sendMessage(sendSocketMessageTo, 'new-dev', dev);
 
             return res.json(dev)
@@ -65,29 +67,29 @@ module.exports = {
         if(!dev){
             return res.status(404).json({error: 'Dev not found'});
         }
+
         dev.update()
-        const sendSocketMessageTo = findConnections(
-            {latitude, longitude}
-        );
-
-        console.log(sendSocketMessageTo.length);
-
-        sendMessage(sendSocketMessageTo, 'dev-updated', dev);
         return res.json({dev});
     },
 
     async destroy(req, res){
         const {github_username} = req.params;
-        const {devId, coordinates} = await Dev.findOneAndDelete({github_username}, {
-            projection: {_id: true, coordinates:true}
-        })
+        const devDeleted = await Dev.findOneAndDelete({github_username})
         
-        if(!devId){
+        if(!devDeleted){
             return res.status(404).json({error: 'Dev not found'});
         }
 
-        const connections = findConnections(coordinates);
-        sendMessage(connections, 'remove-dev', devId);
+        const {_id, location} = devDeleted;
+        const {coordinates} = location;
+
+        longitude = coordinates[0];
+        latitude = coordinates[1];
+
+        const connections = findConnectionsInTenKM({latitude, longitude});
+        console.log("Enviando delete para conexoes");
+        console.log(connections);
+        sendMessage(connections, 'remove-dev', _id);
 
         return res.json({ok: true})
     }

@@ -8,11 +8,7 @@ exports.setupWebSocket = (server) =>{
     io = socketio(server);
    
     io.on('connection', socket =>{
-        socket.on('disconnect', () =>{
-            console.log('disconnect')
-            connections = connections.filter(conn => conn.id != socket.id);
-        });
-
+        
         const {latitude, longitude, techs} = socket.handshake.query;
         connections.push({
             id: socket.id,
@@ -21,6 +17,10 @@ exports.setupWebSocket = (server) =>{
                 longitude: Number(longitude),
             },
             techs: convertStringToArray(techs)
+        });
+        socket.on('disconnect', () =>{
+            console.log('disconnect')
+            connections = connections.filter(conn => conn.id != socket.id);
         });
         console.log(`Tamanho após conexao ${connections.length}`);
     });
@@ -37,12 +37,11 @@ exports.findConnections = (coordinates, techs )=>{
     })
 }
 
-exports.findConnections = (coordinates)=>{
+exports.findConnectionsInTenKM = (coordinates)=>{
     return connections.filter(connection =>{
         return calculateDistance(coordinates, connection.coordinates) < 10;
     })
 }
-
 
 exports.sendMessage = (to, message, data) =>{
     to.forEach(connetion => {

@@ -5,7 +5,7 @@ import { requestPermissionsAsync, getCurrentPositionAsync } from 'expo-location'
 import {MaterialIcons} from '@expo/vector-icons';
 
 import api from '../services/api';
-import {connect, disconnect, subscribeToNewDevs, subscribeToRemoveDevs, subscribeToUpdateDevs, } from '../services/websocket';
+import {connect, disconnect, subscribeToNewDevs, subscribeToRemoveDevs } from '../services/websocket';
 
 //A prop navigation vem automatica para todas paginas
 function Main({navigation}){
@@ -13,6 +13,7 @@ function Main({navigation}){
     const [currentRegion, setCurrentRegion] = useState(null);
     const [devs, setDevs] = useState([]);
     const [techs, setTechs] = useState('');
+    const [isSocketConnected, setSocketConnected] = useState(false);
 
     useEffect(()=>{
         async function loadInitialPosition(){
@@ -32,7 +33,6 @@ function Main({navigation}){
             }
 
         }
-
         loadInitialPosition();
         /**
          Keyboard.addListener('keyboardDidShow', keyboardShow);
@@ -41,28 +41,35 @@ function Main({navigation}){
          */
     }, [devs]);
 
+
     useEffect(() => {
         subscribeToNewDevs(dev => setDevs([...devs, dev]));
 
-        subscribeToRemoveDevs(dev => setDevs(
-            devs.filter(devRemove => devRemove._id != dev._id)
-        ));
-        
-    }, []);
+        subscribeToRemoveDevs(dev => setDevs(devs.filter(devRemove => devRemove._id != dev._id)));
+
+    }, [devs]);
+
+    
 
     function setupWebSocket(){
-        const {latitude, longitude} = currentRegion;
-        disconnect();
-
-        connect(
-            latitude,
-            longitude,
-            techs
-        );
+        if(currentRegion){
+            const {latitude, longitude} = currentRegion;
+            if(isSocketConnected){
+                console.log("Socket esta aberto desconectando");
+                disconnect();
+            }
+            
+            connect(
+                latitude,
+                longitude,
+                techs
+            );
+            setSocketConnected(true);
+        }
     }
+    
 
     async function loadDevs(){
-        console.log('Carregando devs')
         const { latitude, longitude } = currentRegion;
         const response = await api.get('/search', {
             params: {
@@ -71,7 +78,6 @@ function Main({navigation}){
                 techs
             }
         });
-        setupWebSocket();
         setDevs(response.data.devs);
     }
 
@@ -132,7 +138,10 @@ function Main({navigation}){
                 />
 
 
-                <TouchableOpacity style= {styles.loadButton} onPress ={loadDevs}>
+                <TouchableOpacity style= {styles.loadButton} onPress = {() =>{
+                    loadDevs();
+                    setupWebSocket();
+                }}>
                     <MaterialIcons name="my-location" syze={20} color="#FFF"/>
                 </TouchableOpacity>
             </View>       
