@@ -37,18 +37,17 @@ import DevForm from './components/DevForm';
 
 function App(){
   const [devs, setDevs] = useState([]);
- 
+  const [formFunction, setFormFunction] = useState({});
 
  
   useEffect(()=>{
-    async function loadDevs(){
-      const response = await api.get('/devs');
-      setDevs(response.data);
-    }
-
     loadDevs();
   }, []);
-
+  
+  async function loadDevs(){
+    const response = await api.get('/devs');
+    setDevs(response.data);
+  }
   async function handleAddDev( data ){
 
     const response = await api.post('/devs', data);
@@ -57,6 +56,18 @@ function App(){
     setDevs([...devs, response.data]) //imutabilidade (criar um array do zero)
   }
     
+  async function handleDeleteDev( github_username ){
+    console.log('Handle with delete')
+    const responseDelete = await api.delete(`/devs/${github_username}`);
+    if(responseDelete.data.ok === true){
+      alert('Dev removido com sucesso!');
+
+      await loadDevs();
+      return;
+    }
+    alert('Erro ao remover o dev');
+  }
+
     return(
     <div id="app">
       <aside>
@@ -68,7 +79,7 @@ function App(){
       <main>
         <ul>
            {/*NAO COLOCAR CHAVES NA FUNÇÃO DO MAP E SIM PARENTESE*/}
-           {devs.map(dev => ( <DevItem key={ dev._id } dev={ dev } />)) }
+           {devs.map(dev => ( <DevItem  onDelete = {handleDeleteDev} key={ dev._id } dev={ dev } />)) }
         </ul>
       </main>
     </div>

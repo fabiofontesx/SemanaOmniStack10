@@ -1,6 +1,7 @@
  form {
-    margin-top :30px;
+    margin-top :20px;
 }
+
 /* Encontra todos input block que possuam um antes*/
  form .input-block + .input-block{
     margin-top: 20px;

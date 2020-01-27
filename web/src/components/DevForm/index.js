@@ -6,6 +6,7 @@ function DevForm({ onSubmit }){
     const [longitude, setLongitude] = useState('');
     const [github_username, setGithubUserName] = useState('');
     const [techs, setTechs] = useState('');
+    
 
     useEffect(() =>{
         navigator.geolocation.getCurrentPosition(

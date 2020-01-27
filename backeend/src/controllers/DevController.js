@@ -65,7 +65,7 @@ module.exports = {
             {new: true}
         )
         if(!dev){
-            return res.status(404).json({error: 'Dev not found'});
+            return res.status(404).json({errorç: 'Dev not found'});
         }
 
         dev.update()
